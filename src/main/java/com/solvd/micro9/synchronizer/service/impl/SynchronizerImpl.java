@@ -6,10 +6,9 @@ import com.google.gson.Gson;
 import com.solvd.micro9.synchronizer.domain.aggregate.Event;
 import com.solvd.micro9.synchronizer.domain.aggregate.Ticket;
 import com.solvd.micro9.synchronizer.domain.eventstore.Es;
-import com.solvd.micro9.synchronizer.persistence.CheckRepo;
 import com.solvd.micro9.synchronizer.persistence.EventRepository;
 import com.solvd.micro9.synchronizer.persistence.TicketRepository;
-import com.solvd.micro9.synchronizer.service.SynchronizerService;
+import com.solvd.micro9.synchronizer.service.Synchronizer;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -20,13 +19,11 @@ import java.text.SimpleDateFormat;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class SynchronizerServiceImpl implements SynchronizerService {
+public class SynchronizerImpl implements Synchronizer {
 
     private final EventRepository eventRepository;
     private final TicketRepository ticketRepository;
     private final Gson gson = new Gson();
-
-    private final CheckRepo checkRepo; //TODO remove
 
     @SneakyThrows
     @Override
@@ -38,11 +35,9 @@ public class SynchronizerServiceImpl implements SynchronizerService {
                 mapper.registerModule(new JavaTimeModule());
                 mapper.setDateFormat(dateFormat);
                 Event event = mapper.readValue(eventStore.getPayload(), Event.class);
-
                 event.setId(eventStore.getEntityId());
                 event.setNew(true);
                 eventRepository.save(event).subscribe();
-
                 break;
             }
             case TICKET_CREATED: {
@@ -52,27 +47,14 @@ public class SynchronizerServiceImpl implements SynchronizerService {
                 ticketRepository.save(ticket).subscribe();
                 break;
             }
-            case TICKET_USER_DELETED: { //TODO
-                Ticket updatedTicket = new Ticket();
-                checkRepo.findById(eventStore.getEntityId())
+            case TICKET_USER_DELETED: {
+                ticketRepository.findById(eventStore.getEntityId())
                         .map(ticket -> {
-                            updatedTicket.setId(ticket.getId());
-                            updatedTicket.setEventId(ticket.getEventId());
-                            updatedTicket.setQuantity(ticket.getQuantity());
-                            updatedTicket.setPrice(ticket.getPrice());
-                            log.info("in map");
-                            log.info("map: " + updatedTicket);
+                            ticket.setUserId(null);
+                            ticketRepository.save(ticket).subscribe();
                             return ticket;
                         })
-                        //TODO not working (Failed to update table; Row with Id does not exist BUT IT DOES EXIST)
-                        .zipWith(ticketRepository.save(updatedTicket))
-                        .map(res -> {
-                            log.info("res");
-                            log.info("- : " + res.getT2());
-                            return res.getT2();
-                        })
                         .subscribe();
-
                 break;
             }
         }
