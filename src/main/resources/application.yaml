@@ -1,0 +1,33 @@
+server:
+  port:
+    9111
+
+logging:
+  level:
+    com.solvd.micro: DEBUG
+
+spring:
+  config:
+    import: optional:file:.env[.properties]
+  r2dbc:
+    url: r2dbc:postgresql://${POSTGRES_DOMAIN}:5432/postgres?currentSchema=tickets_es
+    username: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
+    driver: org.postgresql.Driver
+  jackson:
+    default-property-inclusion: non_null
+  application:
+    name: SYNCHRONIZER
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}:9092
+    consumer:
+      topic: events
+      group-id: eventGroup
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring:
+          json:
+            value:
+              default:
+                type: com.solvd.micro9.synchronizer.domain.eventstore.Es
