@@ -12,7 +12,7 @@ create table events
 
 create table tickets(
 	id varchar(100),
-	user_id bigint null,
+	user_id varchar(100) null,
 	event_id varchar(100) not null,
 	quantity int not null,
 	price decimal(10, 2) not null,
