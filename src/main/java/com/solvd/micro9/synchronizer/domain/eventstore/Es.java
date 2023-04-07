@@ -17,5 +17,6 @@ public class Es {
     private String createdBy;
     private String entityId;
     private String payload;
+    private EsStatus status;
 
 }
