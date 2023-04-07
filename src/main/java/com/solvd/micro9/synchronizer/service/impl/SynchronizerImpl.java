@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import reactor.core.scheduler.Schedulers;
 
 @Service
 @RequiredArgsConstructor
@@ -22,15 +23,21 @@ public class SynchronizerImpl implements Synchronizer {
     public void sync(Es eventStore) {
         switch (eventStore.getType()) {
             case EVENT_CREATED: {
-                eventService.create(eventStore).subscribe();
+                eventService.create(eventStore)
+                        .subscribeOn(Schedulers.boundedElastic())
+                        .subscribe();
                 break;
             }
             case TICKET_CREATED: {
-                ticketService.create(eventStore).subscribe();
+                ticketService.create(eventStore)
+                        .subscribeOn(Schedulers.boundedElastic())
+                        .subscribe();
                 break;
             }
             case TICKET_USER_DELETED: {
-                ticketService.setUserToNull(eventStore).subscribe();
+                ticketService.setUserToNull(eventStore)
+                        .subscribeOn(Schedulers.boundedElastic())
+                        .subscribe();
                 break;
             }
         }

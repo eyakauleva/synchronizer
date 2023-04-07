@@ -1,6 +1,7 @@
 package com.solvd.micro9.synchronizer.messaging;
 
 import com.solvd.micro9.synchronizer.domain.eventstore.Es;
+import com.solvd.micro9.synchronizer.domain.eventstore.EsStatus;
 import com.solvd.micro9.synchronizer.service.Synchronizer;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
@@ -20,9 +21,11 @@ public class KfConsumer {
     public void fetch() {
         receiver.receive()
                 .subscribe(record -> {
-                    log.info("received value: {}", record.value());
-                    synchronizer.sync(record.value());
-                    record.receiverOffset().acknowledge();
+                    if (EsStatus.SUBMITTED.equals(record.value().getStatus())) {
+                        log.info("received value: {}", record.value());
+                        synchronizer.sync(record.value());
+                        record.receiverOffset().acknowledge();
+                    }
                 });
     }
 
